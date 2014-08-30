@@ -42,6 +42,16 @@ class Recaptcha_ext
 	public $settings		= array();
 
 	private $_error_msg;
+	private $_languages = array(
+		'en' => 'English',
+		'nl' => 'Dutch',
+		'fr' => 'French',
+		'de' => 'German',
+		'pt' => 'Portuguese',
+		'ru' => 'Russian',
+		'es' => 'Spanish',
+		'tr' => 'Turkish'
+	);
 
 
 	/**
@@ -81,6 +91,23 @@ class Recaptcha_ext
 
 		$this->EE->db->insert('captcha', $data);
 
+		// Publisher support?
+		$lang = $this->settings['language'];
+		if (isset($this->EE->publisher_lib))
+		{
+			// loop through available languages
+			foreach($this->EE->publisher_model->languages as $lang)
+			{
+				// when we find the current language, check that it's available to the reCAPTCHA widget
+				if($lang['id'] == $this->EE->publisher_lib->lang_id && array_key_exists($lang['short_name'], $this->_languages))
+				{
+					// override language
+					$lang = $lang['short_name'];
+					break;
+				}
+			}
+		}
+
 		// Use the AJAX API to create the CAPTCHA, and force a create/replace on
 		// each load to ensure that stale (cached) challenges aren't shown
 		// @todo use something faster than window.onload, but without jQuery
@@ -92,7 +119,7 @@ class Recaptcha_ext
 						"recaptcha_container",
 						{
 							theme:'{$this->settings['theme']}',
-							lang:'{$this->settings['language']}'
+							lang:'{$lang}'
 						}
 					);				
 				};
@@ -171,16 +198,7 @@ PIE;
 			'public_key' 	=>  '',
 			'private_key' 	=>  '',
 			'language'		=> array('s',
-				array(
-					'en' => 'English',
-					'nl' => 'Dutch',
-					'fr' => 'French',
-					'de' => 'German',
-					'pt' => 'Portuguese',
-					'ru' => 'Russian',
-					'es' => 'Spanish',
-					'tr' => 'Turkish'
-				),
+				$this->_languages,
 				'en'
 			),
 			'theme'	=> array('r',
